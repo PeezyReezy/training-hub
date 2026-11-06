@@ -11,7 +11,7 @@
 
 1. Go to https://www.strava.com/settings/api and create an API application. Set **Authorization Callback Domain** to your Netlify hostname only (e.g. `my-training-hub.netlify.app`, without `https://` or a path). Strava may require a website URL and application details.
 2. In Netlify project settings, add environment variables `STRAVA_CLIENT_ID` and `STRAVA_CLIENT_SECRET` using the values from Strava. Make them available to Functions. Trigger a redeploy after saving.
-3. In the deployed app, tap **Connect Strava**, authorize, and then **Sync runs**. This imports up to the most recent 100 activities per sync, retaining only runs. It does not continuously sync in the background.
+3. In the deployed app, tap **Connect Strava**, authorize, and then **Sync runs**. This imports all activities from the last 30 days per sync, retaining only runs. It does not continuously sync in the background.
 4. The Strava app may initially have athlete authorization restrictions until Strava reviews it. For a personal app, connecting the app owner's account is the intended use.
 
 ## Data migration and backup
@@ -25,6 +25,6 @@ The dashboard has a separate **Backup hub JSON** button for manually logged and 
 - Strava client secret is stored only as a Netlify environment variable. Do not put it into HTML, GitHub, or the README.
 - Access/refresh tokens are stored in the browser's localStorage, which is convenient for a private single-user tool but less secure than server-side sessions. Do not use this design as a public multi-user app.
 - OAuth state is checked on return; tokens are refreshed through Netlify Functions. Use HTTPS (Netlify provides it).
-- The sync endpoint fetches the 100 most recent activities, not a complete historical archive. No webhooks or background sync.
+- The sync endpoint fetches all pages of activities from the last 30 days, not a complete historical archive. No webhooks or background sync.
 - The app doesn't currently graph exercise progression or record structured Friday sets; Friday is a session note. Those are logical next upgrades.
 - Strava API usage is subject to Strava rate limits and developer policies.
