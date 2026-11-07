@@ -14,6 +14,10 @@
 3. In the deployed app, tap **Connect Strava**, authorize, and then **Sync runs**. This imports all activities from the last 30 days per sync, retaining only runs. It does not continuously sync in the background.
 4. The Strava app may initially have athlete authorization restrictions until Strava reviews it. For a personal app, connecting the app owner's account is the intended use.
 
+If syncing fails, the app distinguishes expired authorization, missing Netlify Functions, rate limits, and temporary service errors. A missing-functions message means the site needs a Git-connected Netlify deployment with Functions enabled. Disconnecting and reconnecting Strava retains previously imported runs. HTML or empty server responses are reported as service errors rather than browser JSON parsing errors.
+
+Run the Strava client regression checks with Node.js: `node --test test/strava-api.test.cjs`. These use mocked responses and do not require Strava credentials.
+
 ## Data migration and backup
 
 The attached strength tracker was copied into `strength.html` and uses its existing localStorage key `strength-training-tracker-v2`. If you have previously logged workouts at a different URL, use **Backup JSON** in the old tracker, then **Import JSON** in the new strength tracker. Browser local storage does not transfer automatically across sites. The dashboard reads strength sessions logged at the new site's `strength.html`.
