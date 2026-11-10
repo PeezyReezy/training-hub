@@ -20,6 +20,10 @@ Run the Strava client regression checks with Node.js: `node --test test/strava-a
 
 ## Data migration and backup
 
+To log strength from the dashboard, choose **Strength**, select **Strength A — Tuesday** or **Strength B — Sunday**, choose the session date, and tap **Start workout**. The tracker opens that workout and date, including an existing session if one is already saved. New sessions prefill each exercise's weights and reps from its latest earlier entry on the same workout day. Completed sets and notes are not copied. Adjust the values and mark your sets complete; existing sessions keep their saved values, including blanks.
+
+Browser regression checks require Playwright and Chromium: `node --test test/strength-flow.browser.cjs`. For a system Chromium installation, set `CHROMIUM_PATH` to its executable path. The tests start their own local static server and use isolated browser storage.
+
 The attached strength tracker was copied into `strength.html` and uses its existing localStorage key `strength-training-tracker-v2`. If you have previously logged workouts at a different URL, use **Backup JSON** in the old tracker, then **Import JSON** in the new strength tracker. Browser local storage does not transfer automatically across sites. The dashboard reads strength sessions logged at the new site's `strength.html`.
 
 The dashboard has a separate **Backup hub JSON** button for manually logged and Strava-imported sessions. Keep both backup files. This version is local-device storage only; it does not synchronize workout logs between phones or browsers.
