@@ -11,7 +11,7 @@ let server, browser, base;
 before(async () => {
   server = http.createServer(async (req, res) => {
     const file = new URL(req.url, 'http://localhost').pathname;
-    if (!['/', '/index.html', '/strength.html', '/strava-api.js'].includes(file)) {
+    if (!['/', '/index.html', '/strength.html', '/strava-api.js', '/strength-plans.js', '/insights.html', '/insights.js', '/insights-data.js'].includes(file)) {
       res.writeHead(404); return res.end();
     }
     res.setHeader('Content-Type', file.endsWith('.js') ? 'application/javascript' : 'text/html');
@@ -128,4 +128,68 @@ test('New session respects the selected date and finished workouts appear on the
   assert.match(await page.locator('#history').innerText(), /Strength A/);
   assert.match(await page.locator('#history').innerText(), /2026-11-10/);
   assert.match(await page.locator('#history').innerText(), /1 sets completed/);
+});
+
+test('Insights defaults band exercises to average reps, charts points, and opens the selected session', async t => {
+  const page = await pageWith(t, {
+    'tuesday|2026-11-03': { sets: { [first]: { weight: 'blue band', reps: '6', done: true } } },
+    'tuesday|2026-11-10': { sets: {
+      [first]: { weight: 'BW', reps: '8', done: true },
+      'A|Band-assisted pull-up|1': { weight: 'BW', reps: '12', done: true },
+      'A|Band-assisted pull-up|2': { weight: 'BW', reps: '50', done: false }
+    } }
+  });
+  await page.getByRole('link', { name: 'Insights', exact: true }).click();
+  assert.equal(await page.locator('#measure').inputValue(), 'averageReps');
+  assert.equal(await page.locator('.point').count(), 2);
+  assert.match(await page.locator('#stats').innerText(), /10 reps/);
+  assert.match(await page.locator('#sessionHistory').innerText(), /blue band/);
+  await page.locator('.point').first().focus();
+  await page.keyboard.press('Enter');
+  assert.match(await page.locator('#pointDetail').innerText(), /2026-11-03.*6 reps/);
+  await page.getByRole('link', { name: '2026-11-10', exact: true }).click();
+  assert.equal(await page.locator('#date').inputValue(), '2026-11-10');
+});
+
+test('Insights weights, date filters, metric switching, and workout isolation work on mobile', async t => {
+  const page = await pageWith(t, {
+    'tuesday|2026-11-03': { sets: { 'A|Zercher squat|0': { weight: '25', reps: '6', done: true } } },
+    'tuesday|2026-11-10': { sets: { 'A|Zercher squat|0': { weight: '35', reps: '8', done: true } } },
+    'sunday|2026-11-08': { sets: { [first]: { weight: 'blue band', reps: '10', done: true } } }
+  });
+  await page.goto(base + '/insights.html');
+  assert.equal(await page.locator('#exercise option').count(), 18);
+  await page.selectOption('#exercise', { label: 'Zercher squat' });
+  assert.equal(await page.locator('#measure').inputValue(), 'weight');
+  assert.match(await page.locator('#stats').innerText(), /35 lb/);
+  await page.fill('#from', '2026-11-10'); await page.locator('#from').dispatchEvent('change');
+  assert.equal(await page.locator('.point').count(), 1);
+  await page.fill('#to', '2026-11-01'); await page.locator('#to').dispatchEvent('change');
+  assert.match(await page.locator('#filterError').innerText(), /end date/);
+  assert.equal(await page.locator('.point').count(), 0);
+  await page.locator('#allTime').click();
+  assert.equal(await page.locator('.point').count(), 2);
+  await page.selectOption('#measure', 'averageReps');
+  assert.match(await page.locator('#stats').innerText(), /8 reps/);
+  await page.selectOption('#exercise', '7'); // First exercise in Strength B.
+  assert.equal(await page.locator('.point').count(), 1);
+  assert.match(await page.locator('#sessionHistory').innerText(), /2026-11-08/);
+  for (const width of [320, 390, 768]) {
+    await page.setViewportSize({ width, height: 844 });
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+  }
+});
+
+test('Insights empty and timed-only histories explain missing numeric data without errors', async t => {
+  const page = await pageWith(t);
+  await page.goto(base + '/insights.html');
+  assert.match(await page.locator('#chart').innerText(), /No completed sets/);
+  await page.evaluate(KEY => localStorage.setItem(KEY, JSON.stringify({ sessions: {
+    'sunday|2026-11-08': { sets: { 'E|Suitcase carry|0': { weight: 'BW', reps: '30 sec', done: true } } }
+  } })), KEY);
+  await page.reload();
+  await page.selectOption('#exercise', { label: 'Suitcase carry' });
+  assert.equal(await page.locator('.point').count(), 0);
+  assert.match(await page.locator('#chart').innerText(), /No numeric reps/);
+  assert.match(await page.locator('#sessionHistory').innerText(), /30 sec/);
 });
