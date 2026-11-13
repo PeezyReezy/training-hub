@@ -28,11 +28,21 @@ The attached strength tracker was copied into `strength.html` and uses its exist
 
 The dashboard has a separate **Backup hub JSON** button for manually logged and Strava-imported sessions. Keep both backup files. This version is local-device storage only; it does not synchronize workout logs between phones or browsers.
 
+## Strength insights
+
+Open **Insights** from the tabs on the dashboard or strength tracker. Choose an exercise from Strength A or Strength B; the two workouts keep separate histories, including exercises shared by both. The chart defaults to the full logged history and supports inclusive From/To date filters.
+
+Exercises with numeric weights default to the heaviest completed set per session. Exercises without numeric weights default to average reps per completed set. Use **Measure** to switch between weight and reps, including for mixed histories. Unchecked sets (including prefilled suggestions) never affect the trend. Bands and BW remain visible in session history. Numeric weights without units are treated as lb, and explicit kg entries are converted to lb. Reps such as `8 / side` count as 8 per side; timed entries and ranges are kept in history without being interpreted as rep counts. Averages exclude sets without a numeric rep count.
+
+Select a chart point for its date and value, or a history date to reopen that workout. Insights reads the existing local strength log without modifying it. The exercise catalog is shared with the tracker.
+
+Regression checks: `node --test test/insights-data.test.cjs test/strava-api.test.cjs`; browser checks: `CHROMIUM_PATH=/usr/bin/chromium node --test test/strength-flow.browser.cjs` (requires Playwright and Chromium).
+
 ## Security and limitations
 
 - Strava client secret is stored only as a Netlify environment variable. Do not put it into HTML, GitHub, or the README.
 - Access/refresh tokens are stored in the browser's localStorage, which is convenient for a private single-user tool but less secure than server-side sessions. Do not use this design as a public multi-user app.
 - OAuth state is checked on return; tokens are refreshed through Netlify Functions. Use HTTPS (Netlify provides it).
 - The sync endpoint fetches all pages of activities from the last 30 days, not a complete historical archive. No webhooks or background sync.
-- The app doesn't currently graph exercise progression or record structured Friday sets; Friday is a session note. Those are logical next upgrades.
+- Insights covers the exercises in the two strength workouts. Friday remains a session note rather than structured sets.
 - Strava API usage is subject to Strava rate limits and developer policies.
