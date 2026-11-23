@@ -59,3 +59,11 @@ test('reports a connection failure without leaking the browser error', async () 
   vm.runInContext(source, context);
   await assert.rejects(context.api('strava-activities', {}), /Check your connection/);
 });
+
+test('configuration uses GET and preserves deployed Functions setup errors', async () => {
+  const { api, requests } = client(200, '{"client_id":"123"}');
+  assert.equal((await api('strava-config')).client_id, '123');
+  assert.equal(requests[0].options.method, 'GET');
+  await assert.rejects(client(503, '{"error":"Missing STRAVA_CLIENT_SECRET. Check Production Functions and redeploy."}').api('strava-config'), /Missing STRAVA_CLIENT_SECRET/);
+  await assert.rejects(client(200, '{}').api('strava-config'), /invalid setup response/);
+});

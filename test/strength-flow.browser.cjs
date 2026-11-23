@@ -193,3 +193,22 @@ test('Insights empty and timed-only histories explain missing numeric data witho
   assert.match(await page.locator('#chart').innerText(), /No numeric reps/);
   assert.match(await page.locator('#sessionHistory').innerText(), /30 sec/);
 });
+
+test('Strava Connect and Sync expose deployed configuration errors without losing saved data', async t => {
+  const page = await pageWith(t);
+  await page.route('**/.netlify/functions/strava-config', route => route.fulfill({
+    status: 503, json: { error: 'Missing STRAVA_CLIENT_SECRET. Check Production Functions and redeploy.' }
+  }));
+  await page.locator('#connect').click();
+  assert.match(await page.locator('#stravaMessage').innerText(), /Missing STRAVA_CLIENT_SECRET/);
+  await page.evaluate(() => {
+    localStorage.setItem('training-hub-strava', JSON.stringify({ access_token: 'test-access', refresh_token: 'test-refresh', expires_at: 1 }));
+    localStorage.setItem('training-hub-v1', JSON.stringify({ logs: [], stravaRuns: [{ id: 'strava-old', date: '2026-10-01', title: 'Saved old run', kind: 'run' }] }));
+  });
+  let upstreamRequests = 0;
+  await page.route('**/.netlify/functions/strava-token', route => { upstreamRequests++; return route.abort(); });
+  await page.reload(); await page.locator('#sync').click();
+  await page.waitForFunction(() => document.querySelector('#stravaMessage').textContent.includes('Missing STRAVA_CLIENT_SECRET'));
+  assert.equal(upstreamRequests, 0);
+  assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem('training-hub-v1')).stravaRuns.length), 1);
+});
