@@ -4,7 +4,7 @@ async function api(path, body) {
   let response;
   try {
     response = await fetch('/.netlify/functions/' + path, {
-      method: 'POST',
+      method: body === undefined ? 'GET' : 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body)
     });
@@ -34,6 +34,8 @@ async function api(path, body) {
 
   if (!data || typeof data !== 'object' || Array.isArray(data))
     throw Error('The Strava service returned an invalid response. Check that this site was deployed with Netlify Functions enabled.');
+  if (path === 'strava-config' && (typeof data.client_id !== 'string' || !data.client_id.trim()))
+    throw Error('The Strava service returned an invalid setup response. Check STRAVA_CLIENT_ID in Netlify Functions and redeploy.');
   if (path === 'strava-activities' && !Array.isArray(data.activities))
     throw Error('Strava returned an invalid activity list. Please try syncing again.');
   if (path === 'strava-token' &&

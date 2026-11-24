@@ -18,6 +18,16 @@ If syncing fails, the app distinguishes expired authorization, missing Netlify F
 
 Run the Strava client regression checks with Node.js: `node --test test/strava-api.test.cjs`. These use mocked responses and do not require Strava credentials.
 
+## Troubleshooting a broken Strava connection
+
+If both Strava variables exist in Netlify but the app reports that Strava is not configured, check the variables on the **same Netlify project** as the live website. They must apply to the **Production** deploy context and be available to **Functions** (or all scopes). Trigger a new production deploy after changes; an already published deploy may still have the earlier configuration. The configuration endpoint now checks both required variables and reports missing names, never their values. Connect and Sync both display this deployment check before proceeding.
+
+For this site, the Strava API application's Authorization Callback Domain should be `idyllic-dragon-c344c0.netlify.app`, without a scheme or path. If the site moves, update this hostname. Keep `STRAVA_CLIENT_ID` and `STRAVA_CLIENT_SECRET` from the same Strava API application. If Strava rejects them, update them securely in Netlify and redeploy. Never put secrets, access tokens, or refresh tokens in the repository or chat.
+
+An expired or revoked refresh token requires reconnecting Strava; saved runs remain on this device. Missing deployment settings require fixing Netlify rather than repeatedly reconnecting. See [Strava authentication documentation](https://developers.strava.com/docs/authentication/) for the provider's OAuth setup requirements. This change does not establish that Strava changed its API.
+
+Server configuration and token tests: `node --test test/strava-functions.test.cjs test/strava-api.test.cjs` (uses synthetic credentials and mocked responses).
+
 ## Data migration and backup
 
 To log strength from the dashboard, choose **Strength**, select **Strength A — Tuesday** or **Strength B — Sunday**, choose the session date, and tap **Start workout**. The tracker opens that workout and date, including an existing session if one is already saved. New sessions prefill each exercise's weights and reps from its latest earlier entry on the same workout day. Completed sets and notes are not copied. Adjust the values and mark your sets complete; existing sessions keep their saved values, including blanks.
